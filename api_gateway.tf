@@ -1,13 +1,11 @@
 # ==============================================================================
 # DATA LOOKUPS: Dynamic SSL Certificate and DNS Zones
 # ==============================================================================
-# Dynamically finds the pre-existing ACM certificate for the sandbox domain
 data "aws_acm_certificate" "sandbox_cert" {
   domain   = "*.sctp-sandbox.com"
   statuses = ["ISSUED"]
 }
 
-# Dynamically finds the Route 53 Hosted Zone for the sandbox environment
 data "aws_route53_zone" "sandbox_zone" {
   name         = "sctp-sandbox.com."
   private_zone = false
@@ -28,33 +26,29 @@ resource "aws_api_gateway_rest_api" "api" {
 # ==============================================================================
 # INPUT VARIABLES: Cross-Team Integration (KeanHin Links)
 # ==============================================================================
-# ==============================================================================
-# INPUT VARIABLES: Cross-Team Integration (KeanHin Links)
-# ==============================================================================
 variable "create_lambda_arn" {
   type        = string
   description = "ARN of the create-url Lambda provided by KeanHin"
-  default     = "arn:aws:lambda:us-east-1:123456789012:function:placeholder-create" # <-- Add this default
+  default     = "arn:aws:lambda:us-east-1:123456789012:function:placeholder-create"
 }
 
 variable "retrieve_lambda_arn" {
   type        = string
   description = "ARN of the retrieve-url Lambda provided by KeanHin"
-  default     = "arn:aws:lambda:us-east-1:123456789012:function:placeholder-retrieve" # <-- Add this default
+  default     = "arn:aws:lambda:us-east-1:123456789012:function:placeholder-retrieve"
 }
 
 variable "create_lambda_name" {
   type        = string
   description = "Function name of the create-url Lambda for KeanHin's mapping"
-  default     = "placeholder-create" # <-- Add this default
+  default     = "placeholder-create"
 }
 
 variable "retrieve_lambda_name" {
   type        = string
   description = "Function name of the retrieve-url Lambda for KeanHin's mapping"
-  default     = "placeholder-retrieve" # <-- Add this default
+  default     = "placeholder-retrieve"
 }
-
 
 # ==============================================================================
 # POST ROUTE: /newurl
@@ -152,10 +146,10 @@ resource "aws_api_gateway_integration_response" "get_integration_response" {
 }
 
 # ==============================================================================
-# ROUTE53 CUSTOM DOMAIN MAPPING (Variable-Driven Block)
+# ROUTE53 CUSTOM DOMAIN MAPPING
 # ==============================================================================
 resource "aws_api_gateway_domain_name" "shortener" {
-  domain_name              = var.custom_domain_name # Referenced from variables.tf
+  domain_name              = var.custom_domain_name
   regional_certificate_arn = data.aws_acm_certificate.sandbox_cert.arn
 
   endpoint_configuration {
@@ -163,9 +157,8 @@ resource "aws_api_gateway_domain_name" "shortener" {
   }
 }
 
-# DNS Record Alias link to connect traffic to the Gateway endpoint
 resource "aws_route53_record" "www" {
-  name    = var.custom_domain_name # Referenced from variables.tf
+  name    = var.custom_domain_name
   type    = "A"
   zone_id = data.aws_route53_zone.sandbox_zone.zone_id
 
@@ -177,10 +170,22 @@ resource "aws_route53_record" "www" {
 }
 
 # ==============================================================================
-# DEPLOYMENT STAGE WITH X-RAY OBLIGATION
+# DEPLOYMENT STAGE WITH X-RAY
 # ==============================================================================
 resource "aws_api_gateway_deployment" "deploy" {
   rest_api_id = aws_api_gateway_rest_api.api.id
+
+  triggers = {
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_resource.newurl.id,
+      aws_api_gateway_method.post_method.id,
+      aws_api_gateway_integration.post_integration.id,
+      aws_api_gateway_resource.geturl.id,
+      aws_api_gateway_method.get_method.id,
+      aws_api_gateway_integration.get_integration.id,
+      aws_api_gateway_integration_response.get_integration_response.id,
+    ]))
+  }
 
   depends_on = [
     aws_api_gateway_integration.post_integration,
@@ -206,13 +211,13 @@ resource "aws_api_gateway_base_path_mapping" "shortener" {
 }
 
 # ==============================================================================
-# LAMBDA PERMISSIONS: Authorization Handshake Policies
+# LAMBDA PERMISSIONS
 # ==============================================================================
 resource "aws_lambda_permission" "apigw_create_permission" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = var.create_lambda_name
-  principal     = "://amazonaws.com"
+  principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }
 
@@ -220,7 +225,7 @@ resource "aws_lambda_permission" "apigw_retrieve_permission" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = var.retrieve_lambda_name
-  principal     = "://amazonaws.com"
+  principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }
 
