@@ -78,7 +78,7 @@ resource "aws_api_gateway_method_response" "response_200" {
   resource_id = aws_api_gateway_resource.newurl.id
   http_method = aws_api_gateway_method.post_method.http_method
   status_code = "200"
-  
+
   response_models = {
     "application/json" = "Empty"
   }
@@ -149,7 +149,7 @@ resource "aws_api_gateway_integration_response" "get_integration_response" {
 resource "aws_api_gateway_domain_name" "shortener" {
   domain_name              = var.custom_domain_name # Referenced from variables.tf
   regional_certificate_arn = data.aws_acm_certificate.sandbox_cert.arn
-  
+
   endpoint_configuration {
     types = ["REGIONAL"]
   }
