@@ -1,7 +1,7 @@
 variable "AWS_REGION" {
   description = "Region for all resources. The ACM cert is created here too (REGIONAL API endpoint)."
   type        = string
-  default     = "ap-southeast-1"
+  default     = "us-east-1"
 }
 
 variable "OIDC_ROLE" {
