@@ -28,25 +28,33 @@ resource "aws_api_gateway_rest_api" "api" {
 # ==============================================================================
 # INPUT VARIABLES: Cross-Team Integration (KeanHin Links)
 # ==============================================================================
+# ==============================================================================
+# INPUT VARIABLES: Cross-Team Integration (KeanHin Links)
+# ==============================================================================
 variable "create_lambda_arn" {
   type        = string
   description = "ARN of the create-url Lambda provided by KeanHin"
+  default     = "arn:aws:lambda:us-east-1:123456789012:function:placeholder-create" # <-- Add this default
 }
 
 variable "retrieve_lambda_arn" {
   type        = string
   description = "ARN of the retrieve-url Lambda provided by KeanHin"
+  default     = "arn:aws:lambda:us-east-1:123456789012:function:placeholder-retrieve" # <-- Add this default
 }
 
 variable "create_lambda_name" {
   type        = string
   description = "Function name of the create-url Lambda for KeanHin's mapping"
+  default     = "placeholder-create" # <-- Add this default
 }
 
 variable "retrieve_lambda_name" {
   type        = string
   description = "Function name of the retrieve-url Lambda for KeanHin's mapping"
+  default     = "placeholder-retrieve" # <-- Add this default
 }
+
 
 # ==============================================================================
 # POST ROUTE: /newurl
